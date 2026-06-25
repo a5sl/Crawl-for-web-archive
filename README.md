@@ -13,7 +13,11 @@ A Python tool for crawling the [Wayback Machine](https://web.archive.org/) to ex
 - **Multiple export formats** — export extracted tweets as JSON or CSV
 
 ## Quickstart
-
+Edit `TARGET_HANDLE` in crawl.py to the twitter user name, whose archive you want to download. Then
+```
+python crawl.py
+```
+Or you want to try
 ```bash
 # Install
 pip install -e ".[dev]"
