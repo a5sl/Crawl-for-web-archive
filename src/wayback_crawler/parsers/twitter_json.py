@@ -278,18 +278,18 @@ class TwitterJsonParser(BaseParser):
             # Video media: URLs are inside variants array
             if m_type in ("video", "animated_gif"):
                 variants = m.get("variants", [])
-                for v in variants:
-                    if not isinstance(v, dict):
-                        continue
-                    # Prefer mp4 over m3u8 (HLS playlist)
-                    ct = v.get("content_type", "")
-                    v_url = v.get("url", "")
-                    if v_url and "mpegURL" not in ct:
-                        media_items.append(Media(
-                            tweet_id=0,
-                            url=v_url,
-                            media_type="video",
-                        ))
+                # Sort by bit_rate descending so highest quality downloads first
+                mp4_variants = [
+                    v for v in variants
+                    if isinstance(v, dict) and v.get("url") and "mpegURL" not in v.get("content_type", "")
+                ]
+                mp4_variants.sort(key=lambda v: v.get("bit_rate", 0), reverse=True)
+                for v in mp4_variants:
+                    media_items.append(Media(
+                        tweet_id=0,
+                        url=v["url"],
+                        media_type="video",
+                    ))
                 # Also add preview image
                 preview = m.get("preview_image_url")
                 if preview:
@@ -321,17 +321,17 @@ class TwitterJsonParser(BaseParser):
             if m_type in ("video", "animated_gif"):
                 video_info = m.get("video_info", {})
                 variants = video_info.get("variants", [])
-                for v in variants:
-                    if not isinstance(v, dict):
-                        continue
-                    ct = v.get("content_type", "")
-                    v_url = v.get("url", "")
-                    if v_url and "mpegURL" not in ct:
-                        media_items.append(Media(
-                            tweet_id=0,
-                            url=v_url,
-                            media_type="video",
-                        ))
+                mp4_variants = [
+                    v for v in variants
+                    if isinstance(v, dict) and v.get("url") and "mpegURL" not in v.get("content_type", "")
+                ]
+                mp4_variants.sort(key=lambda v: v.get("bitrate", 0), reverse=True)
+                for v in mp4_variants:
+                    media_items.append(Media(
+                        tweet_id=0,
+                        url=v["url"],
+                        media_type="video",
+                    ))
             else:
                 media_url = m.get("media_url_https") or m.get("media_url") or ""
                 if media_url:

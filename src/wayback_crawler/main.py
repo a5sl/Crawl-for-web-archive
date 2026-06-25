@@ -27,6 +27,7 @@ from wayback_crawler.parser import ParserDispatcher
 from wayback_crawler.storage import Storage
 from wayback_crawler.utils import (
     compute_wayback_url,
+    media_output_dir,
     now_iso,
     setup_logging,
 )
@@ -227,6 +228,11 @@ async def _fetch_async(
         console.print("[green]No pending snapshots — all done![/green]")
         return
 
+    # If media_dir is specified, create subdir named after the Twitter handle
+    actual_media_dir = media_output_dir(media_dir, run.url_pattern) if media_dir else None
+    if actual_media_dir:
+        actual_media_dir.mkdir(parents=True, exist_ok=True)
+
     console.print(f"[bold]Run #{run.id}[/bold]: Fetching {len(pending)} snapshots "
                   f"(concurrency={cfg.fetcher.concurrency})")
 
@@ -264,11 +270,11 @@ async def _fetch_async(
                     for m in result.media:
                         m.tweet_id = stored.id
                     await db.insert_media_batch(result.media)
-                    if media_dir:
+                    if actual_media_dir:
                         for m in result.media:
                             local_path = await download_media(
                                 client, m.url, snapshot.timestamp,
-                                str(media_dir), cfg.fetcher.user_agent,
+                                str(actual_media_dir), cfg.fetcher.user_agent,
                                 timeout=cfg.fetcher.timeout,
                                 wayback_url=m.wayback_url,
                             )
@@ -376,6 +382,10 @@ async def _resume_async(
         console.print("[green]No pending snapshots — all done![/green]")
         return
 
+    actual_media_dir = media_output_dir(media_dir, run.url_pattern) if media_dir else None
+    if actual_media_dir:
+        actual_media_dir.mkdir(parents=True, exist_ok=True)
+
     status_label = "pending + failed" if retry_failed else "pending"
     console.print(f"[bold]Resuming Run #{run.id}[/bold]: {len(pending)} {status_label} snapshots")
 
@@ -409,11 +419,11 @@ async def _resume_async(
                     for m in result.media:
                         m.tweet_id = stored.id
                     await db.insert_media_batch(result.media)
-                    if media_dir:
+                    if actual_media_dir:
                         for m in result.media:
                             local_path = await download_media(
                                 client, m.url, snapshot.timestamp,
-                                str(media_dir), cfg.fetcher.user_agent,
+                                str(actual_media_dir), cfg.fetcher.user_agent,
                                 timeout=cfg.fetcher.timeout,
                                 wayback_url=m.wayback_url,
                             )
@@ -584,13 +594,15 @@ async def _download_media_async(
         console.print("[red]No crawl runs found.[/red]")
         raise typer.Exit(1)
 
+    actual_media_dir = media_output_dir(media_dir, run.url_pattern)
+    actual_media_dir.mkdir(parents=True, exist_ok=True)
+
     media_items = await db.get_undownloaded_media(run.id)
     if not media_items:
         console.print("[green]All media already downloaded.[/green]")
         return
 
-    console.print(f"Downloading {len(media_items)} media files to {media_dir}/")
-    media_dir.mkdir(parents=True, exist_ok=True)
+    console.print(f"Downloading {len(media_items)} media files to {actual_media_dir}/")
 
     # Get snapshot timestamps for constructing Wayback URLs
     snapshots_map: dict[int, str] = {}
@@ -618,7 +630,7 @@ async def _download_media_async(
             ) as client:
                 path = await download_media(
                     client, m["url"], timestamp,
-                    str(media_dir), cfg.fetcher.user_agent,
+                    str(actual_media_dir), cfg.fetcher.user_agent,
                     timeout=cfg.fetcher.timeout,
                     wayback_url=m.get("wayback_url"),
                 )

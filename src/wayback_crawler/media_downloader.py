@@ -26,7 +26,7 @@ async def download_media(
     snapshot_timestamp: str,
     output_dir: str | Path,
     user_agent: str,
-    timeout: float = 30.0,
+    timeout: float = 60.0,
     max_retries: int = 2,
     wayback_url: str | None = None,
 ) -> str | None:
@@ -85,6 +85,10 @@ async def download_media(
             return str(output_path)
 
         except httpx.HTTPStatusError as e:
+            # 404 means media was never archived — no point retrying
+            if e.response.status_code == 404:
+                logger.debug("Media not archived (404): %s", media_url[:80])
+                return None
             logger.debug("HTTP %d for media %s (attempt %d/%d)",
                          e.response.status_code, media_url[:80],
                          attempt + 1, max_retries + 1)

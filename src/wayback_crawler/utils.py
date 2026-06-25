@@ -6,6 +6,7 @@ import logging
 import random
 import re
 from datetime import datetime, timezone
+from pathlib import Path
 from urllib.parse import urlparse
 
 
@@ -79,3 +80,20 @@ def parse_twitter_status_id(url: str) -> str | None:
     """Extract the Twitter status ID from a tweet URL."""
     m = re.search(r"/status(?:es)?/(\d+)", url)
     return m.group(1) if m else None
+
+
+def extract_handle(url_pattern: str) -> str:
+    """Extract the Twitter handle from a CDX URL pattern.
+
+    ``twitter.com/youzaimeimei/*`` → ``youzaimeimei``
+    """
+    m = re.search(r"twitter\.com/([^/*]+)", url_pattern)
+    return m.group(1) if m else "unknown"
+
+
+def media_output_dir(base_dir: str | Path, url_pattern: str) -> Path:
+    """Return the media output directory for a crawl target.
+
+    ``./media`` + ``twitter.com/youzaimeimei/*`` → ``./media/youzaimeimei/``
+    """
+    return Path(base_dir) / extract_handle(url_pattern)
