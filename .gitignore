@@ -1,0 +1,29 @@
+/tests
+/.claude
+/.idea
+
+# Database files
+*.db
+*.db-wal
+*.db-journal
+*.db-shm
+/media
+
+
+# Python virtual environment
+/.venv
+/Lib
+/Scripts
+.lock
+pyvenv.cfg
+CACHEDIR.TAG
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# special files
+config.example.yaml
+full_export.json

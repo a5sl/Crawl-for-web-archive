@@ -1,0 +1,2 @@
+[console_scripts]
+wayback-crawler = wayback_crawler.main:app
